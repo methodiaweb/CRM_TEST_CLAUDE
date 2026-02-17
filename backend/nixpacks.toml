@@ -1,0 +1,5 @@
+[phases.build]
+cmds = ["npm install"]
+
+[start]
+cmd = "node scripts/initDb.js && node server.js"

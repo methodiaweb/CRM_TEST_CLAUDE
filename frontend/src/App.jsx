@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Calendar, Users, Plus, Search, Filter, TrendingUp, Clock, FileText, MessageSquare, 
-  ChevronDown, ChevronRight, Upload, Download, X, Menu, Bell, Settings, LogOut, User,
-  Phone, Mail, Paperclip, Trash2, Edit, Check, BarChart3, PieChart, Activity,
-  ArrowUpRight, ArrowDownRight, DollarSign, Target
+  Users, Plus, Search, TrendingUp, Clock, FileText, MessageSquare, 
+  ChevronDown, ChevronRight, Upload, Download, X, Menu, Bell, LogOut, User,
+  Phone, Mail, Paperclip, BarChart3,
+  DollarSign, Target
 } from 'lucide-react';
 
 // Богати инициални данни

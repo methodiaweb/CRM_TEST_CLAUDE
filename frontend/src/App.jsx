@@ -1,285 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, Plus, Search, TrendingUp, Clock, FileText, MessageSquare, 
   ChevronDown, ChevronRight, Upload, Download, X, Menu, Bell, LogOut, User,
   Phone, Mail, Paperclip, BarChart3,
-  DollarSign, Target
+  DollarSign, Target, AlertCircle, Loader
 } from 'lucide-react';
-
-// Богати инициални данни
-const INITIAL_DATA = {
-  users: [
-    { id: 1, name: 'Админ', role: 'admin', email: 'admin@company.com', region: 'Всички' },
-    { id: 2, name: 'Иван Петров', role: 'manager', email: 'ivan@company.com', region: 'София' },
-    { id: 3, name: 'Мария Георгиева', role: 'sales', email: 'maria@company.com', region: 'Пловдив' },
-    { id: 4, name: 'Георги Димитров', role: 'sales', email: 'georgi@company.com', region: 'Варна' },
-    { id: 5, name: 'Елена Костова', role: 'sales', email: 'elena@company.com', region: 'София' },
-  ],
-  leads: [
-    {
-      id: 1,
-      name: 'Софтех ЕООД',
-      type: 'B2B',
-      status: 'won',
-      source: { level1: 'Онлайн', level2: 'Уебсайт' },
-      region: 'София',
-      assignedTo: 5,
-      createdAt: '2026-01-15T10:30:00',
-      value: 25000,
-      contact: { phone: '0888123456', email: 'contact@softech.bg', person: 'Петър Иванов' },
-      company: { eik: '123456789', mol: 'Петър Иванов', address: 'София, ул. Витоша 1' },
-      files: [
-        { id: 1, name: 'Оферта_Софтех_2026.pdf', type: 'offer', uploadedBy: 'Елена Костова', uploadedAt: '2026-01-20T14:30:00' },
-        { id: 2, name: 'Договор_Софтех_signed.pdf', type: 'contract', uploadedBy: 'Елена Костова', uploadedAt: '2026-02-01T11:20:00' }
-      ],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-01-15T10:30:00', data: 'Лийд създаден' },
-        { id: 2, type: 'assigned', user: 'Админ', timestamp: '2026-01-15T10:35:00', data: 'Назначен на Елена Костова' },
-        { id: 3, type: 'status_change', user: 'Елена Костова', timestamp: '2026-01-16T09:15:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 4, type: 'comment', user: 'Елена Костова', timestamp: '2026-01-16T09:20:00', data: 'Първи разговор - интересуват се от автоматизация на бизнес процеси. Уговорена среща за 18.01.' },
-        { id: 5, type: 'comment', user: 'Елена Костова', timestamp: '2026-01-18T15:30:00', data: 'Проведена среща в офиса на клиента. Обсъдени нужди, @Иван Петров може да помогне с техническите детайли.' },
-        { id: 6, type: 'status_change', user: 'Елена Костова', timestamp: '2026-01-19T10:00:00', data: 'Статус променен от "Контактуван" на "Оферта изпратена"' },
-        { id: 7, type: 'file', user: 'Елена Костова', timestamp: '2026-01-20T14:30:00', data: 'Качен файл: Оферта_Софтех_2026.pdf' },
-        { id: 8, type: 'comment', user: 'Иван Петров', timestamp: '2026-01-22T11:00:00', data: 'Получена обратна връзка - харесват предложението, искат малка корекция в цената.' },
-        { id: 9, type: 'status_change', user: 'Елена Костова', timestamp: '2026-01-25T14:00:00', data: 'Статус променен от "Оферта изпратена" на "Преговори"' },
-        { id: 10, type: 'comment', user: 'Елена Костова', timestamp: '2026-01-28T16:00:00', data: 'Постигнахме споразумение! Стойност 25,000 лв. Изпращам договор.' },
-        { id: 11, type: 'file', user: 'Елена Костова', timestamp: '2026-02-01T11:20:00', data: 'Качен файл: Договор_Софтех_signed.pdf' },
-        { id: 12, type: 'status_change', user: 'Елена Костова', timestamp: '2026-02-01T11:25:00', data: 'Статус променен от "Преговори" на "Спечелен"' },
-      ]
-    },
-    {
-      id: 2,
-      name: 'Мега Маркет АД',
-      type: 'B2B',
-      status: 'offer_sent',
-      source: { level1: 'Препоръка', level2: 'Клиент' },
-      region: 'Пловдив',
-      assignedTo: 3,
-      createdAt: '2026-02-01T09:00:00',
-      value: 18000,
-      contact: { phone: '0877111222', email: 'sales@megamarket.bg', person: 'Стефан Димов' },
-      company: { eik: '987654321', mol: 'Стефан Димов', address: 'Пловдив, бул. Руски 45' },
-      files: [
-        { id: 3, name: 'Оферта_МегаМаркет_v2.pdf', type: 'offer', uploadedBy: 'Мария Георгиева', uploadedAt: '2026-02-10T10:15:00' }
-      ],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-01T09:00:00', data: 'Лийд създаден' },
-        { id: 2, type: 'assigned', user: 'Админ', timestamp: '2026-02-01T09:05:00', data: 'Назначен на Мария Георгиева' },
-        { id: 3, type: 'comment', user: 'Мария Георгиева', timestamp: '2026-02-01T11:00:00', data: 'Препоръчан от Софтех ЕООД. Търсят подобно решение.' },
-        { id: 4, type: 'status_change', user: 'Мария Георгиева', timestamp: '2026-02-03T14:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 5, type: 'comment', user: 'Мария Георгиева', timestamp: '2026-02-05T16:30:00', data: 'Телефонен разговор - искат оферта до края на седмицата.' },
-        { id: 6, type: 'file', user: 'Мария Георгиева', timestamp: '2026-02-10T10:15:00', data: 'Качен файл: Оферта_МегаМаркет_v2.pdf' },
-        { id: 7, type: 'status_change', user: 'Мария Георгиева', timestamp: '2026-02-10T10:20:00', data: 'Статус променен от "Контактуван" на "Оферта изпратена"' },
-        { id: 8, type: 'comment', user: 'Мария Георгиева', timestamp: '2026-02-14T09:00:00', data: 'Проследяване - чакаме отговор до края на седмицата.' },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Иван Стоянов',
-      type: 'B2C',
-      status: 'contacted',
-      source: { level1: 'Онлайн', level2: 'Facebook' },
-      region: 'Пловдив',
-      assignedTo: 3,
-      createdAt: '2026-02-12T14:20:00',
-      value: 3500,
-      contact: { phone: '0877654321', email: 'ivan.st@gmail.com', person: 'Иван Стоянов' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-12T14:20:00', data: 'Лийд създаден' },
-        { id: 2, type: 'assigned', user: 'Админ', timestamp: '2026-02-12T14:25:00', data: 'Назначен на Мария Георгиева' },
-        { id: 3, type: 'status_change', user: 'Мария Георгиева', timestamp: '2026-02-13T09:15:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 4, type: 'comment', user: 'Мария Георгиева', timestamp: '2026-02-13T09:20:00', data: 'Обадих се, интересува се от продукт А. Уговорена среща за утре.' },
-      ]
-    },
-    {
-      id: 4,
-      name: 'Техно Град ООД',
-      type: 'B2B',
-      status: 'negotiation',
-      source: { level1: 'Офлайн', level2: 'Изложение' },
-      region: 'Варна',
-      assignedTo: 4,
-      createdAt: '2026-01-28T11:00:00',
-      value: 32000,
-      contact: { phone: '0888999888', email: 'office@tehnograd.bg', person: 'Красимира Петкова' },
-      company: { eik: '456789123', mol: 'Красимира Петкова', address: 'Варна, ул. Сливница 12' },
-      files: [
-        { id: 4, name: 'Оферта_ТехноГрад.pdf', type: 'offer', uploadedBy: 'Георги Димитров', uploadedAt: '2026-02-05T15:00:00' }
-      ],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-01-28T11:00:00', data: 'Лийд създаден' },
-        { id: 2, type: 'comment', user: 'Георги Димитров', timestamp: '2026-01-28T11:10:00', data: 'Запознати на изложение Tech Expo. Много заинтересовани.' },
-        { id: 3, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-01-30T10:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 4, type: 'file', user: 'Георги Димитров', timestamp: '2026-02-05T15:00:00', data: 'Качен файл: Оферта_ТехноГрад.pdf' },
-        { id: 5, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-02-05T15:05:00', data: 'Статус променен от "Контактуван" на "Оферта изпратена"' },
-        { id: 6, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-02-12T14:00:00', data: 'Статус променен от "Оферта изпратена" на "Преговори"' },
-        { id: 7, type: 'comment', user: 'Георги Димитров', timestamp: '2026-02-12T14:05:00', data: 'Активни преговори за крайната цена. Очакваме решение до края на месеца.' },
-      ]
-    },
-    {
-      id: 5,
-      name: 'Елена Василева',
-      type: 'B2C',
-      status: 'new',
-      source: { level1: 'Онлайн', level2: 'Google Ads' },
-      region: 'София',
-      assignedTo: 5,
-      createdAt: '2026-02-15T16:45:00',
-      value: 2800,
-      contact: { phone: '0899777666', email: 'e.vasileva@gmail.com', person: 'Елена Василева' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-15T16:45:00', data: 'Лийд създаден' },
-        { id: 2, type: 'assigned', user: 'Система', timestamp: '2026-02-15T16:45:00', data: 'Автоматично назначен на Елена Костова (регион: София)' },
-      ]
-    },
-    {
-      id: 6,
-      name: 'БизнесПро ЕООД',
-      type: 'B2B',
-      status: 'contacted',
-      source: { level1: 'Онлайн', level2: 'LinkedIn' },
-      region: 'София',
-      assignedTo: 5,
-      createdAt: '2026-02-10T10:20:00',
-      value: 15000,
-      contact: { phone: '0888555444', email: 'info@biznespro.bg', person: 'Николай Георгиев' },
-      company: { eik: '789123456', mol: 'Николай Георгиев', address: 'София, бул. Цариградско шосе 115' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-10T10:20:00', data: 'Лийд създаден' },
-        { id: 2, type: 'assigned', user: 'Система', timestamp: '2026-02-10T10:20:00', data: 'Автоматично назначен на Елена Костова' },
-        { id: 3, type: 'status_change', user: 'Елена Костова', timestamp: '2026-02-11T09:30:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 4, type: 'comment', user: 'Елена Костова', timestamp: '2026-02-11T09:35:00', data: 'Първи контакт по email. Изпратих презентация на услугите.' },
-      ]
-    },
-    {
-      id: 7,
-      name: 'Мартин Колев',
-      type: 'B2C',
-      status: 'lost',
-      source: { level1: 'Офлайн', level2: 'Телефон' },
-      region: 'Варна',
-      assignedTo: 4,
-      createdAt: '2026-01-20T14:00:00',
-      value: 4200,
-      contact: { phone: '0877333222', email: 'm.kolev@abv.bg', person: 'Мартин Колев' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-01-20T14:00:00', data: 'Лийд създаден' },
-        { id: 2, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-01-21T10:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 3, type: 'comment', user: 'Георги Димитров', timestamp: '2026-01-25T15:00:00', data: 'Няколко разговора - цената е твърде висока за него.' },
-        { id: 4, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-02-05T11:00:00', data: 'Статус променен от "Контактуван" на "Загубен"' },
-        { id: 5, type: 'comment', user: 'Георги Димитров', timestamp: '2026-02-05T11:05:00', data: 'Клиентът избра конкурент с по-ниска цена.' },
-      ]
-    },
-    {
-      id: 8,
-      name: 'ДигиталМаркет ООД',
-      type: 'B2B',
-      status: 'new',
-      source: { level1: 'Препоръка', level2: 'Партньор' },
-      region: 'Пловдив',
-      assignedTo: 3,
-      createdAt: '2026-02-14T09:30:00',
-      value: 21000,
-      contact: { phone: '0888444555', email: 'contact@digitalmarket.bg', person: 'Десислава Иванова' },
-      company: { eik: '321654987', mol: 'Десислава Иванова', address: 'Пловдив, ул. Марица 22' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-14T09:30:00', data: 'Лийд създаден' },
-        { id: 2, type: 'comment', user: 'Мария Георгиева', timestamp: '2026-02-14T09:35:00', data: 'Препоръчани от наш партньор. Планирам обаждане утре.' },
-      ]
-    },
-    {
-      id: 9,
-      name: 'Александра Тодорова',
-      type: 'B2C',
-      status: 'offer_sent',
-      source: { level1: 'Онлайн', level2: 'Instagram' },
-      region: 'София',
-      assignedTo: 5,
-      createdAt: '2026-02-08T11:15:00',
-      value: 5600,
-      contact: { phone: '0899888777', email: 'alex.todorova@gmail.com', person: 'Александра Тодорова' },
-      files: [
-        { id: 5, name: 'Оферта_Тодорова.pdf', type: 'offer', uploadedBy: 'Елена Костова', uploadedAt: '2026-02-12T14:00:00' }
-      ],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-08T11:15:00', data: 'Лийд създаден' },
-        { id: 2, type: 'status_change', user: 'Елена Костова', timestamp: '2026-02-09T10:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 3, type: 'comment', user: 'Елена Костова', timestamp: '2026-02-09T10:05:00', data: 'Запитване от Instagram. Интересува се от пакет Premium.' },
-        { id: 4, type: 'file', user: 'Елена Костова', timestamp: '2026-02-12T14:00:00', data: 'Качен файл: Оферта_Тодорова.pdf' },
-        { id: 5, type: 'status_change', user: 'Елена Костова', timestamp: '2026-02-12T14:05:00', data: 'Статус променен от "Контактуван" на "Оферта изпратена"' },
-      ]
-    },
-    {
-      id: 10,
-      name: 'ТехноСофт АД',
-      type: 'B2B',
-      status: 'won',
-      source: { level1: 'Офлайн', level2: 'Директна среща' },
-      region: 'Варна',
-      assignedTo: 4,
-      createdAt: '2026-01-10T09:00:00',
-      value: 45000,
-      contact: { phone: '0888111222', email: 'sales@tehnosoft.bg', person: 'Валентин Петров' },
-      company: { eik: '147258369', mol: 'Валентин Петров', address: 'Варна, бул. Владислав Варненчик 89' },
-      files: [
-        { id: 6, name: 'Договор_ТехноСофт_final.pdf', type: 'contract', uploadedBy: 'Георги Димитров', uploadedAt: '2026-01-30T16:00:00' }
-      ],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-01-10T09:00:00', data: 'Лийд създаден' },
-        { id: 2, type: 'comment', user: 'Георги Димитров', timestamp: '2026-01-10T09:10:00', data: 'Среща в нашия офис. Големи амбиции за дигитализация.' },
-        { id: 3, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-01-12T10:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 4, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-01-18T11:00:00', data: 'Статус променен от "Контактуван" на "Оферта изпратена"' },
-        { id: 5, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-01-25T14:00:00', data: 'Статус променен от "Оферта изпратена" на "Преговори"' },
-        { id: 6, type: 'comment', user: 'Георги Димитров', timestamp: '2026-01-28T15:00:00', data: 'Отлични преговори! Постигнахме споразумение за 45,000 лв.' },
-        { id: 7, type: 'file', user: 'Георги Димитров', timestamp: '2026-01-30T16:00:00', data: 'Качен файл: Договор_ТехноСофт_final.pdf' },
-        { id: 8, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-01-30T16:05:00', data: 'Статус променен от "Преговори" на "Спечелен"' },
-      ]
-    },
-    {
-      id: 11,
-      name: 'Георги Симеонов',
-      type: 'B2C',
-      status: 'contacted',
-      source: { level1: 'Препоръка', level2: 'Клиент' },
-      region: 'Пловдив',
-      assignedTo: 3,
-      createdAt: '2026-02-13T10:00:00',
-      value: 3200,
-      contact: { phone: '0877222333', email: 'g.simeonov@mail.bg', person: 'Георги Симеонов' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-13T10:00:00', data: 'Лийд създаден' },
-        { id: 2, type: 'comment', user: 'Мария Георгиева', timestamp: '2026-02-13T10:05:00', data: 'Препоръчан от Иван Стоянов. Търси подобно решение.' },
-        { id: 3, type: 'status_change', user: 'Мария Георгиева', timestamp: '2026-02-14T11:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-      ]
-    },
-    {
-      id: 12,
-      name: 'ИноваГрупа ЕООД',
-      type: 'B2B',
-      status: 'contacted',
-      source: { level1: 'Онлайн', level2: 'Уебсайт' },
-      region: 'Бургас',
-      assignedTo: 4,
-      createdAt: '2026-02-11T15:30:00',
-      value: 19500,
-      contact: { phone: '0888666777', email: 'office@inovagroup.bg', person: 'Пламен Христов' },
-      company: { eik: '963852741', mol: 'Пламен Христов', address: 'Бургас, ул. Александровска 56' },
-      files: [],
-      timeline: [
-        { id: 1, type: 'created', user: 'Система', timestamp: '2026-02-11T15:30:00', data: 'Лийд създаден' },
-        { id: 2, type: 'assigned', user: 'Система', timestamp: '2026-02-11T15:30:00', data: 'Автоматично назначен на Георги Димитров (най-малко натоварен в региона)' },
-        { id: 3, type: 'status_change', user: 'Георги Димитров', timestamp: '2026-02-12T09:00:00', data: 'Статус променен от "Нов" на "Контактуван"' },
-        { id: 4, type: 'comment', user: 'Георги Димитров', timestamp: '2026-02-12T09:10:00', data: 'Добър първи разговор. Планират разширяване и имат нужда от системи.' },
-      ]
-    },
-  ]
-};
+import api from './services/api';
 
 const STATUSES = [
   { id: 'new', label: 'Нов', color: 'bg-blue-100 text-blue-800' },
@@ -298,10 +24,27 @@ const SOURCES = {
 
 const REGIONS = ['София', 'Пловдив', 'Варна', 'Бургас', 'Русе', 'Стара Загора', 'Друг'];
 
+// Helper: normalize lead from API response
+const normalizeLead = (lead) => ({
+  ...lead,
+  assignedTo: lead.assigned_to ?? lead.assignedTo,
+  source: lead.source_level1
+    ? { level1: lead.source_level1, level2: lead.source_level2 }
+    : lead.source || { level1: '', level2: '' },
+  contact: lead.contact || {},
+  company: lead.company || {},
+  timeline: lead.timeline || [],
+  files: lead.files || [],
+  value: parseFloat(lead.value) || 0,
+});
+
 const CRMApp = () => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [data, setData] = useState(INITIAL_DATA);
   const [view, setView] = useState('login');
+  const [leads, setLeads] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [chartData, setChartData] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [showNewLeadForm, setShowNewLeadForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -309,269 +52,200 @@ const CRMApp = () => {
   const [filterType, setFilterType] = useState('all');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Load from localStorage
+  // Login screen users list (just for display — we still use real auth)
+  const LOGIN_USERS = [
+    { id: 1, name: 'Админ', role: 'admin', email: 'admin@company.com' },
+    { id: 2, name: 'Иван Петров', role: 'manager', email: 'ivan@company.com' },
+    { id: 3, name: 'Мария Георгиева', role: 'sales', email: 'maria@company.com' },
+    { id: 4, name: 'Георги Димитров', role: 'sales', email: 'georgi@company.com' },
+    { id: 5, name: 'Елена Костова', role: 'sales', email: 'elena@company.com' },
+  ];
+
+  // Check for existing session on mount
   useEffect(() => {
-    const saved = localStorage.getItem('crm-data-enhanced');
-    if (saved) {
-      setData(JSON.parse(saved));
+    const token = localStorage.getItem('crm_token');
+    const savedUser = localStorage.getItem('crm_user');
+    if (token && savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setCurrentUser(user);
+        setView('dashboard');
+      } catch {
+        localStorage.removeItem('crm_token');
+        localStorage.removeItem('crm_user');
+      }
     }
   }, []);
 
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('crm-data-enhanced', JSON.stringify(data));
-  }, [data]);
+  // Load data when logged in
+  const loadData = useCallback(async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {};
+      if (filterStatus !== 'all') params.status = filterStatus;
+      if (filterType !== 'all') params.type = filterType;
+      if (searchTerm) params.search = searchTerm;
 
-  const login = (userId) => {
-    const user = data.users.find(u => u.id === userId);
-    setCurrentUser(user);
-    setView('dashboard');
+      const [leadsRes, statsRes] = await Promise.all([
+        api.getLeads(params),
+        api.getStats(),
+      ]);
+
+      setLeads((leadsRes.leads || []).map(normalizeLead));
+      setStats(statsRes.stats);
+      setChartData(statsRes.charts);
+
+      // Load users for admin/manager
+      if (currentUser.role === 'admin' || currentUser.role === 'manager') {
+        const [usersRes, perfRes] = await Promise.all([
+          api.getUsers(),
+          api.getUserPerformance(),
+        ]);
+        setUsers(usersRes.users || []);
+        // Merge performance into chart data
+        setChartData(prev => ({
+          ...prev,
+          salesData: (perfRes.performance || []).map(p => ({
+            name: p.name,
+            leads: parseInt(p.total_leads) || 0,
+            won: parseInt(p.won_leads) || 0,
+            value: parseFloat(p.total_value) || 0,
+          }))
+        }));
+      }
+    } catch (err) {
+      setError('Грешка при зареждане на данните: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser, filterStatus, filterType, searchTerm]);
+
+  useEffect(() => {
+    if (view === 'dashboard' && currentUser) {
+      loadData();
+    }
+  }, [view, currentUser, loadData]);
+
+  const login = async (email) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.login(email, 'password123');
+      localStorage.setItem('crm_user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      setView('dashboard');
+    } catch (err) {
+      setError('Грешка при вход: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
+    api.logout();
+    localStorage.removeItem('crm_user');
     setCurrentUser(null);
     setView('login');
     setSelectedLead(null);
+    setLeads([]);
+    setStats(null);
+    setError(null);
   };
 
-  const addLead = (leadData) => {
-    const newLead = {
-      ...leadData,
-      id: data.leads.length + 1,
-      createdAt: new Date().toISOString(),
-      files: [],
-      timeline: [
-        {
-          id: 1,
-          type: 'created',
-          user: currentUser.name,
-          timestamp: new Date().toISOString(),
-          data: 'Лийд създаден'
-        }
-      ]
-    };
-    setData({ ...data, leads: [...data.leads, newLead] });
-    setShowNewLeadForm(false);
-  };
-
-  const updateLeadStatus = (leadId, newStatus) => {
-    const statusLabel = STATUSES.find(s => s.id === newStatus)?.label;
-    const oldStatus = data.leads.find(l => l.id === leadId)?.status;
-    const oldStatusLabel = STATUSES.find(s => s.id === oldStatus)?.label;
-
-    setData({
-      ...data,
-      leads: data.leads.map(lead =>
-        lead.id === leadId
-          ? {
-              ...lead,
-              status: newStatus,
-              timeline: [
-                ...lead.timeline,
-                {
-                  id: lead.timeline.length + 1,
-                  type: 'status_change',
-                  user: currentUser.name,
-                  timestamp: new Date().toISOString(),
-                  data: `Статус променен от "${oldStatusLabel}" на "${statusLabel}"`
-                }
-              ]
-            }
-          : lead
-      )
-    });
-
-    if (selectedLead?.id === leadId) {
-      const updated = data.leads.find(l => l.id === leadId);
-      setSelectedLead({
-        ...updated,
-        status: newStatus,
-        timeline: [
-          ...updated.timeline,
-          {
-            id: updated.timeline.length + 1,
-            type: 'status_change',
-            user: currentUser.name,
-            timestamp: new Date().toISOString(),
-            data: `Статус променен от "${oldStatusLabel}" на "${statusLabel}"`
-          }
-        ]
-      });
+  const addLead = async (leadData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await api.createLead(leadData);
+      setShowNewLeadForm(false);
+      await loadData();
+    } catch (err) {
+      setError('Грешка при създаване на лийд: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const addComment = (leadId, comment) => {
-    setData({
-      ...data,
-      leads: data.leads.map(lead =>
-        lead.id === leadId
-          ? {
-              ...lead,
-              timeline: [
-                ...lead.timeline,
-                {
-                  id: lead.timeline.length + 1,
-                  type: 'comment',
-                  user: currentUser.name,
-                  timestamp: new Date().toISOString(),
-                  data: comment
-                }
-              ]
-            }
-          : lead
-      )
-    });
-
-    if (selectedLead?.id === leadId) {
-      setSelectedLead({
-        ...selectedLead,
-        timeline: [
-          ...selectedLead.timeline,
-          {
-            id: selectedLead.timeline.length + 1,
-            type: 'comment',
-            user: currentUser.name,
-            timestamp: new Date().toISOString(),
-            data: comment
-          }
-        ]
-      });
+  const updateLeadStatus = async (leadId, newStatus) => {
+    try {
+      await api.updateLeadStatus(leadId, newStatus);
+      // Optimistic update
+      setLeads(prev => prev.map(l =>
+        l.id === leadId ? { ...l, status: newStatus } : l
+      ));
+      // Refresh selected lead
+      if (selectedLead?.id === leadId) {
+        const res = await api.getLead(leadId);
+        setSelectedLead(normalizeLead(res.lead));
+      }
+      await loadData();
+    } catch (err) {
+      setError('Грешка при промяна на статус: ' + err.message);
     }
   };
 
-  const addFile = (leadId, fileName, fileType) => {
-    const newFile = {
-      id: Math.max(0, ...data.leads.flatMap(l => l.files || []).map(f => f.id)) + 1,
-      name: fileName,
-      type: fileType,
-      uploadedBy: currentUser.name,
-      uploadedAt: new Date().toISOString()
-    };
+  const addComment = async (leadId, comment) => {
+    try {
+      await api.addComment(leadId, comment);
+      // Refresh lead detail
+      const res = await api.getLead(leadId);
+      const updated = normalizeLead(res.lead);
+      setSelectedLead(updated);
+      setLeads(prev => prev.map(l => l.id === leadId ? updated : l));
+    } catch (err) {
+      setError('Грешка при добавяне на коментар: ' + err.message);
+    }
+  };
 
-    setData({
-      ...data,
-      leads: data.leads.map(lead =>
-        lead.id === leadId
-          ? {
-              ...lead,
-              files: [...(lead.files || []), newFile],
-              timeline: [
-                ...lead.timeline,
-                {
-                  id: lead.timeline.length + 1,
-                  type: 'file',
-                  user: currentUser.name,
-                  timestamp: new Date().toISOString(),
-                  data: `Качен файл: ${fileName}`
-                }
-              ]
-            }
-          : lead
-      )
-    });
+  const addFile = async (leadId, fileName, fileType) => {
+    try {
+      await api.addFile(leadId, fileName, fileType);
+      // Refresh lead detail
+      const res = await api.getLead(leadId);
+      const updated = normalizeLead(res.lead);
+      setSelectedLead(updated);
+      setLeads(prev => prev.map(l => l.id === leadId ? updated : l));
+    } catch (err) {
+      setError('Грешка при качване на файл: ' + err.message);
+    }
+  };
 
-    if (selectedLead?.id === leadId) {
-      setSelectedLead({
-        ...selectedLead,
-        files: [...(selectedLead.files || []), newFile],
-        timeline: [
-          ...selectedLead.timeline,
-          {
-            id: selectedLead.timeline.length + 1,
-            type: 'file',
-            user: currentUser.name,
-            timestamp: new Date().toISOString(),
-            data: `Качен файл: ${fileName}`
-          }
-        ]
-      });
+  const openLeadDetail = async (lead) => {
+    setLoading(true);
+    try {
+      const res = await api.getLead(lead.id);
+      setSelectedLead(normalizeLead(res.lead));
+    } catch {
+      setSelectedLead(lead);
+    } finally {
+      setLoading(false);
     }
   };
 
   const exportToCSV = () => {
-    const csvData = filteredLeads.map(lead => ({
+    if (!leads.length) return;
+    const csvData = leads.map(lead => ({
       'Име': lead.name,
       'Тип': lead.type,
       'Статус': STATUSES.find(s => s.id === lead.status)?.label,
-      'Източник': `${lead.source.level1} - ${lead.source.level2}`,
       'Регион': lead.region,
       'Стойност': lead.value || 0,
-      'Email': lead.contact.email,
-      'Телефон': lead.contact.phone,
-      'Създаден': new Date(lead.createdAt).toLocaleDateString('bg-BG')
+      'Email': lead.contact?.email || '',
+      'Телефон': lead.contact?.phone || '',
     }));
-
     const headers = Object.keys(csvData[0]).join(',');
     const rows = csvData.map(row => Object.values(row).join(','));
     const csv = [headers, ...rows].join('\n');
-
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-  };
-
-  const filteredLeads = data.leads.filter(lead => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.contact?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.contact?.phone?.includes(searchTerm);
-    const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
-    const matchesType = filterType === 'all' || lead.type === filterType;
-    const matchesRole = currentUser?.role === 'admin' || currentUser?.role === 'manager' || lead.assignedTo === currentUser?.id;
-    
-    return matchesSearch && matchesStatus && matchesType && matchesRole;
-  });
-
-  const getStats = () => {
-    const userLeads = currentUser?.role === 'admin' || currentUser?.role === 'manager' 
-      ? data.leads 
-      : data.leads.filter(l => l.assignedTo === currentUser?.id);
-    
-    const totalValue = userLeads.reduce((sum, lead) => sum + (lead.value || 0), 0);
-    const wonValue = userLeads.filter(l => l.status === 'won').reduce((sum, lead) => sum + (lead.value || 0), 0);
-    
-    return {
-      total: userLeads.length,
-      new: userLeads.filter(l => l.status === 'new').length,
-      won: userLeads.filter(l => l.status === 'won').length,
-      active: userLeads.filter(l => !['won', 'lost'].includes(l.status)).length,
-      totalValue,
-      wonValue,
-      conversionRate: userLeads.length > 0 ? Math.round((userLeads.filter(l => l.status === 'won').length / userLeads.length) * 100) : 0
-    };
-  };
-
-  const getChartData = () => {
-    const userLeads = currentUser?.role === 'admin' || currentUser?.role === 'manager' 
-      ? data.leads 
-      : data.leads.filter(l => l.assignedTo === currentUser?.id);
-
-    // Status distribution
-    const statusData = STATUSES.map(status => ({
-      status: status.label,
-      count: userLeads.filter(l => l.status === status.id).length,
-      value: userLeads.filter(l => l.status === status.id).reduce((sum, l) => sum + (l.value || 0), 0)
-    }));
-
-    // B2B vs B2C
-    const typeData = [
-      { type: 'B2B', count: userLeads.filter(l => l.type === 'B2B').length },
-      { type: 'B2C', count: userLeads.filter(l => l.type === 'B2C').length }
-    ];
-
-    // Performance by sales rep
-    const salesData = data.users
-      .filter(u => u.role === 'sales')
-      .map(user => ({
-        name: user.name,
-        leads: data.leads.filter(l => l.assignedTo === user.id).length,
-        won: data.leads.filter(l => l.assignedTo === user.id && l.status === 'won').length,
-        value: data.leads.filter(l => l.assignedTo === user.id && l.status === 'won').reduce((sum, l) => sum + (l.value || 0), 0)
-      }));
-
-    return { statusData, typeData, salesData };
   };
 
   // Login Screen
@@ -586,22 +260,34 @@ const CRMApp = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-2">CRM System</h1>
             <p className="text-gray-600">Изберете потребител за вход</p>
           </div>
-          
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
           <div className="space-y-3">
-            {data.users.map(user => (
+            {LOGIN_USERS.map(user => (
               <button
                 key={user.id}
-                onClick={() => login(user.id)}
-                className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group"
+                onClick={() => login(user.email)}
+                disabled={loading}
+                className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-gray-800 group-hover:text-indigo-700">{user.name}</div>
-                    <div className="text-sm text-gray-500 capitalize">
+                    <div className="text-sm text-gray-500">
                       {user.role === 'admin' ? 'Администратор' : user.role === 'manager' ? 'Мениджър' : 'Търговец'}
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" />
+                  {loading ? (
+                    <Loader className="w-5 h-5 text-indigo-400 animate-spin" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" />
+                  )}
                 </div>
               </button>
             ))}
@@ -611,14 +297,11 @@ const CRMApp = () => {
     );
   }
 
-  const stats = getStats();
-  const chartData = getChartData();
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -634,11 +317,8 @@ const CRMApp = () => {
       `}>
         <div className="p-4 flex items-center justify-between border-b border-indigo-800">
           {sidebarOpen && <h2 className="text-xl font-bold">CRM Pro</h2>}
-          <button 
-            onClick={() => {
-              setSidebarOpen(!sidebarOpen);
-              setMobileMenuOpen(false);
-            }} 
+          <button
+            onClick={() => { setSidebarOpen(!sidebarOpen); setMobileMenuOpen(false); }}
             className="p-2 hover:bg-indigo-800 rounded-lg"
           >
             <Menu className="w-5 h-5" />
@@ -653,7 +333,7 @@ const CRMApp = () => {
             <TrendingUp className="w-5 h-5 flex-shrink-0" />
             {sidebarOpen && <span>Dashboard</span>}
           </button>
-          
+
           <button
             onClick={() => { setShowNewLeadForm(true); setMobileMenuOpen(false); }}
             className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-indigo-800 transition-colors"
@@ -664,7 +344,7 @@ const CRMApp = () => {
 
           {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
             <button
-              onClick={() => exportToCSV()}
+              onClick={exportToCSV}
               className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-indigo-800 transition-colors"
             >
               <Download className="w-5 h-5 flex-shrink-0" />
@@ -714,11 +394,14 @@ const CRMApp = () => {
                   {selectedLead ? selectedLead.name : 'Dashboard'}
                 </h1>
                 <p className="text-gray-600 text-sm">
-                  {selectedLead ? `${selectedLead.type} • ${STATUSES.find(s => s.id === selectedLead.status)?.label}` : `Добре дошли, ${currentUser?.name}`}
+                  {selectedLead
+                    ? `${selectedLead.type} • ${STATUSES.find(s => s.id === selectedLead.status)?.label}`
+                    : `Добре дошли, ${currentUser?.name}`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {loading && <Loader className="w-5 h-5 text-indigo-400 animate-spin" />}
               <button className="p-2 hover:bg-gray-100 rounded-lg relative">
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -726,6 +409,19 @@ const CRMApp = () => {
             </div>
           </div>
         </header>
+
+        {/* Error Banner */}
+        {error && !loading && (
+          <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between text-red-700 text-sm">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+            <button onClick={() => setError(null)} className="ml-2 hover:text-red-900">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
@@ -738,45 +434,49 @@ const CRMApp = () => {
                     <span className="text-gray-600 text-xs md:text-sm">Всички</span>
                     <Users className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-gray-800">{stats.total}</div>
+                  <div className="text-2xl md:text-3xl font-bold text-gray-800">{stats?.total ?? '—'}</div>
                   <div className="text-xs text-gray-500 mt-1">лийдове</div>
                 </div>
-                
+
                 <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-600 text-xs md:text-sm">Активни</span>
                     <Clock className="w-4 h-4 md:w-5 md:h-5 text-orange-600" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-gray-800">{stats.active}</div>
+                  <div className="text-2xl md:text-3xl font-bold text-gray-800">{stats?.active ?? '—'}</div>
                   <div className="text-xs text-gray-500 mt-1">в процес</div>
                 </div>
-                
+
                 <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-600 text-xs md:text-sm">Спечелени</span>
                     <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-gray-800">{stats.won}</div>
-                  <div className="text-xs text-green-600 mt-1">{stats.conversionRate}% конверсия</div>
+                  <div className="text-2xl md:text-3xl font-bold text-gray-800">{stats?.won ?? '—'}</div>
+                  <div className="text-xs text-green-600 mt-1">{stats?.conversionRate ?? 0}% конверсия</div>
                 </div>
-                
+
                 <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-600 text-xs md:text-sm">Обороти</span>
                     <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-gray-800">
-                    {(stats.wonValue / 1000).toFixed(0)}K
+                    {stats ? `${((stats.wonValue || 0) / 1000).toFixed(0)}K` : '—'}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">от {(stats.totalValue / 1000).toFixed(0)}K лв</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    от {stats ? `${((stats.totalValue || 0) / 1000).toFixed(0)}K` : '—'} лв
+                  </div>
                 </div>
               </div>
 
               {/* Charts (Manager/Admin only) */}
-              {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
+              {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && chartData && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
                   <ChartCard title="Разпределение по статус" data={chartData.statusData} type="funnel" />
-                  <ChartCard title="Performance по търговци" data={chartData.salesData} type="sales" />
+                  {chartData.salesData && (
+                    <ChartCard title="Performance по търговци" data={chartData.salesData} type="sales" />
+                  )}
                 </div>
               )}
 
@@ -793,7 +493,7 @@ const CRMApp = () => {
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                   </div>
-                  
+
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -804,7 +504,7 @@ const CRMApp = () => {
                       <option key={status.id} value={status.id}>{status.label}</option>
                     ))}
                   </select>
-                  
+
                   <select
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
@@ -817,93 +517,105 @@ const CRMApp = () => {
                 </div>
               </div>
 
-              {/* Leads Table - Desktop */}
-              <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Лийд</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Тип</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Статус</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Стойност</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Регион</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Назначен</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredLeads.map(lead => {
-                        const assignedUser = data.users.find(u => u.id === lead.assignedTo);
-                        const status = STATUSES.find(s => s.id === lead.status);
-                        
-                        return (
-                          <tr
-                            key={lead.id}
-                            onClick={() => setSelectedLead(lead)}
-                            className="hover:bg-gray-50 cursor-pointer transition-colors"
-                          >
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-gray-800">{lead.name}</div>
-                              <div className="text-sm text-gray-500">{lead.contact.email}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {lead.type}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status?.color}`}>
-                                {status?.label}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-800">
-                              {lead.value ? `${lead.value.toLocaleString()} лв` : '-'}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">{lead.region}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600">{assignedUser?.name}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              {/* Loading state */}
+              {loading && !leads.length && (
+                <div className="flex items-center justify-center py-16 text-gray-400">
+                  <Loader className="w-8 h-8 animate-spin mr-3" />
+                  <span>Зареждане...</span>
                 </div>
-                
-                {filteredLeads.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    Няма намерени лийдове
-                  </div>
-                )}
-              </div>
+              )}
 
-              {/* Leads Cards - Mobile */}
-              <div className="md:hidden space-y-3">
-                {filteredLeads.map(lead => {
-                  const status = STATUSES.find(s => s.id === lead.status);
-                  return (
-                    <div
-                      key={lead.id}
-                      onClick={() => setSelectedLead(lead)}
-                      className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-800">{lead.name}</h3>
-                          <p className="text-sm text-gray-500">{lead.contact.person}</p>
-                        </div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status?.color}`}>
-                          {status?.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">{lead.type}</span>
-                        {lead.value && (
-                          <span className="font-medium text-gray-800">{lead.value.toLocaleString()} лв</span>
-                        )}
-                      </div>
+              {/* Leads Table - Desktop */}
+              {!loading || leads.length > 0 ? (
+                <>
+                  <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Лийд</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Тип</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Статус</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Стойност</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Регион</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Назначен</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {leads.map(lead => {
+                            const status = STATUSES.find(s => s.id === lead.status);
+                            const assignedUser = users.find(u => u.id === lead.assignedTo);
+                            return (
+                              <tr
+                                key={lead.id}
+                                onClick={() => openLeadDetail(lead)}
+                                className="hover:bg-gray-50 cursor-pointer transition-colors"
+                              >
+                                <td className="px-6 py-4">
+                                  <div className="font-semibold text-gray-800">{lead.name}</div>
+                                  <div className="text-sm text-gray-500">{lead.contact?.email}</div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {lead.type}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status?.color}`}>
+                                    {status?.label}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-800">
+                                  {lead.value ? `${lead.value.toLocaleString()} лв` : '-'}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-600">{lead.region}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600">
+                                  {assignedUser?.name || lead.assigned_to_name || '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
-                  );
-                })}
-              </div>
+                    {leads.length === 0 && !loading && (
+                      <div className="text-center py-12 text-gray-500">
+                        Няма намерени лийдове
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Leads Cards - Mobile */}
+                  <div className="md:hidden space-y-3">
+                    {leads.map(lead => {
+                      const status = STATUSES.find(s => s.id === lead.status);
+                      return (
+                        <div
+                          key={lead.id}
+                          onClick={() => openLeadDetail(lead)}
+                          className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-800">{lead.name}</h3>
+                              <p className="text-sm text-gray-500">{lead.contact?.person}</p>
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status?.color}`}>
+                              {status?.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">{lead.type}</span>
+                            {lead.value > 0 && (
+                              <span className="font-medium text-gray-800">{lead.value.toLocaleString()} лв</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : null}
             </>
           ) : (
             <LeadDetail
@@ -924,7 +636,8 @@ const CRMApp = () => {
           onClose={() => setShowNewLeadForm(false)}
           onSubmit={addLead}
           currentUser={currentUser}
-          users={data.users}
+          users={users}
+          loading={loading}
         />
       )}
     </div>
@@ -934,7 +647,7 @@ const CRMApp = () => {
 // Chart Component
 const ChartCard = ({ title, data, type }) => {
   if (type === 'funnel') {
-    const maxValue = Math.max(...data.map(d => d.count));
+    const maxValue = Math.max(...(data || []).map(d => d.count || 0), 1);
     return (
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -942,16 +655,16 @@ const ChartCard = ({ title, data, type }) => {
           {title}
         </h3>
         <div className="space-y-3">
-          {data.map((item, idx) => (
+          {(data || []).map((item, idx) => (
             <div key={idx}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-gray-700">{item.status}</span>
-                <span className="text-sm text-gray-600">{item.count} ({item.value.toLocaleString()} лв)</span>
+                <span className="text-sm text-gray-600">{item.count}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-indigo-600 h-2 rounded-full transition-all"
-                  style={{ width: `${(item.count / maxValue) * 100}%` }}
+                  style={{ width: `${((item.count || 0) / maxValue) * 100}%` }}
                 />
               </div>
             </div>
@@ -969,14 +682,14 @@ const ChartCard = ({ title, data, type }) => {
           {title}
         </h3>
         <div className="space-y-4">
-          {data.map((item, idx) => (
+          {(data || []).map((item, idx) => (
             <div key={idx} className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium text-gray-800">{item.name}</div>
                 <div className="text-sm text-gray-500">{item.leads} лийдове • {item.won} спечелени</div>
               </div>
               <div className="text-right">
-                <div className="font-semibold text-gray-800">{(item.value / 1000).toFixed(0)}K</div>
+                <div className="font-semibold text-gray-800">{((item.value || 0) / 1000).toFixed(0)}K</div>
                 <div className="text-xs text-gray-500">лв</div>
               </div>
             </div>
@@ -996,20 +709,23 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState('offer');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleAddComment = () => {
-    if (comment.trim()) {
-      onAddComment(lead.id, comment);
-      setComment('');
-    }
+  const handleAddComment = async () => {
+    if (!comment.trim()) return;
+    setSubmitting(true);
+    await onAddComment(lead.id, comment);
+    setComment('');
+    setSubmitting(false);
   };
 
-  const handleAddFile = () => {
-    if (fileName.trim()) {
-      onAddFile(lead.id, fileName, fileType);
-      setFileName('');
-      setShowFileUpload(false);
-    }
+  const handleAddFile = async () => {
+    if (!fileName.trim()) return;
+    setSubmitting(true);
+    await onAddFile(lead.id, fileName, fileType);
+    setFileName('');
+    setShowFileUpload(false);
+    setSubmitting(false);
   };
 
   const getTimelineIcon = (type) => {
@@ -1036,6 +752,14 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
 
   const currentStatus = STATUSES.find(s => s.id === lead.status);
 
+  // Normalize timeline - handle both user_name and user fields
+  const timeline = (lead.timeline || []).map(e => ({
+    ...e,
+    user: e.user_name || e.user || 'Система',
+    data: e.data || e.content || '',
+    timestamp: e.created_at || e.timestamp,
+  }));
+
   return (
     <div className="max-w-5xl mx-auto">
       <button
@@ -1047,25 +771,19 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Left Column - Info */}
+        {/* Left Column */}
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
           {/* Quick Actions */}
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
             <h3 className="text-sm font-semibold text-gray-600 mb-3">БЪРЗИ ДЕЙСТВИЯ</h3>
             <div className="space-y-2">
-              <a
-                href={`tel:${lead.contact.phone}`}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-              >
+              <a href={`tel:${lead.contact?.phone}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <Phone className="w-4 h-4 text-green-600" />
-                <span className="text-sm">{lead.contact.phone}</span>
+                <span className="text-sm">{lead.contact?.phone}</span>
               </a>
-              <a
-                href={`mailto:${lead.contact.email}`}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-              >
+              <a href={`mailto:${lead.contact?.email}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <Mail className="w-4 h-4 text-blue-600" />
-                <span className="text-sm truncate">{lead.contact.email}</span>
+                <span className="text-sm truncate">{lead.contact?.email}</span>
               </a>
             </div>
           </div>
@@ -1081,16 +799,13 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
                 <span>{currentStatus?.label}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
-              
+
               {showStatusDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                   {STATUSES.map(status => (
                     <button
                       key={status.id}
-                      onClick={() => {
-                        onStatusChange(lead.id, status.id);
-                        setShowStatusDropdown(false);
-                      }}
+                      onClick={() => { onStatusChange(lead.id, status.id); setShowStatusDropdown(false); }}
                       className={`w-full text-left px-4 py-2 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${status.id === lead.status ? 'bg-gray-50' : ''}`}
                     >
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
@@ -1107,14 +822,11 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
           <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-600">ФАЙЛОВЕ</h3>
-              <button
-                onClick={() => setShowFileUpload(true)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
+              <button onClick={() => setShowFileUpload(true)} className="p-1 hover:bg-gray-100 rounded">
                 <Upload className="w-4 h-4 text-gray-600" />
               </button>
             </div>
-            
+
             {showFileUpload && (
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <input
@@ -1136,7 +848,8 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
                 <div className="flex gap-2">
                   <button
                     onClick={handleAddFile}
-                    className="flex-1 px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                    disabled={submitting}
+                    className="flex-1 px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
                   >
                     Качи
                   </button>
@@ -1156,9 +869,9 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
                   <div key={file.id} className="flex items-center gap-2 p-2 rounded hover:bg-gray-50">
                     <Paperclip className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-800 truncate">{file.name}</div>
+                      <div className="text-sm font-medium text-gray-800 truncate">{file.name || file.original_name}</div>
                       <div className="text-xs text-gray-500">
-                        {file.uploadedBy} • {new Date(file.uploadedAt).toLocaleDateString('bg-BG')}
+                        {file.uploadedBy || file.uploaded_by_name} • {new Date(file.uploadedAt || file.created_at).toLocaleDateString('bg-BG')}
                       </div>
                     </div>
                   </div>
@@ -1175,9 +888,9 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
             <div className="space-y-3">
               <div>
                 <div className="text-xs text-gray-500 mb-1">Лице за контакт</div>
-                <div className="text-sm font-medium text-gray-800">{lead.contact.person}</div>
+                <div className="text-sm font-medium text-gray-800">{lead.contact?.person}</div>
               </div>
-              {lead.value && (
+              {lead.value > 0 && (
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Стойност</div>
                   <div className="text-sm font-medium text-gray-800">{lead.value.toLocaleString()} лв</div>
@@ -1187,22 +900,28 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
           </div>
 
           {/* Company Info (B2B only) */}
-          {lead.type === 'B2B' && lead.company && (
+          {lead.type === 'B2B' && lead.company && (lead.company.eik || lead.company.mol) && (
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-600 mb-4">ФИРМЕНИ ДАННИ</h3>
               <div className="space-y-3">
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">ЕИК</div>
-                  <div className="text-sm font-medium text-gray-800">{lead.company.eik}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">МОЛ</div>
-                  <div className="text-sm text-gray-800">{lead.company.mol}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Адрес</div>
-                  <div className="text-sm text-gray-800">{lead.company.address}</div>
-                </div>
+                {lead.company.eik && (
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">ЕИК</div>
+                    <div className="text-sm font-medium text-gray-800">{lead.company.eik}</div>
+                  </div>
+                )}
+                {lead.company.mol && (
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">МОЛ</div>
+                    <div className="text-sm text-gray-800">{lead.company.mol}</div>
+                  </div>
+                )}
+                {lead.company.address && (
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Адрес</div>
+                    <div className="text-sm text-gray-800">{lead.company.address}</div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1217,10 +936,12 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
                   {lead.type}
                 </span>
               </div>
-              <div>
-                <div className="text-xs text-gray-500 mb-1">Източник</div>
-                <div className="text-sm text-gray-800">{lead.source.level1} → {lead.source.level2}</div>
-              </div>
+              {lead.source && (
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Източник</div>
+                  <div className="text-sm text-gray-800">{lead.source.level1} → {lead.source.level2}</div>
+                </div>
+              )}
               <div>
                 <div className="text-xs text-gray-500 mb-1">Регион</div>
                 <div className="text-sm text-gray-800">{lead.region}</div>
@@ -1248,9 +969,10 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
               <div className="mt-3 flex justify-end">
                 <button
                   onClick={handleAddComment}
-                  disabled={!comment.trim()}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
+                  disabled={!comment.trim() || submitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm md:text-base flex items-center gap-2"
                 >
+                  {submitting && <Loader className="w-4 h-4 animate-spin" />}
                   Добави коментар
                 </button>
               </div>
@@ -1258,22 +980,18 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
 
             {/* Timeline Events */}
             <div className="p-4 md:p-6 space-y-4 max-h-[400px] md:max-h-[600px] overflow-y-auto">
-              {[...lead.timeline].reverse().map((event) => (
-                <div key={event.id} className="flex gap-3 md:gap-4">
+              {[...timeline].reverse().map((event, idx) => (
+                <div key={event.id || idx} className="flex gap-3 md:gap-4">
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getTimelineColor(event.type)}`}>
                     {getTimelineIcon(event.type)}
                   </div>
-                  
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-1 md:gap-2 mb-1">
                       <span className="font-medium text-gray-800 text-sm md:text-base">{event.user}</span>
                       <span className="text-xs text-gray-500">
                         {new Date(event.timestamp).toLocaleString('bg-BG', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
+                          day: '2-digit', month: '2-digit', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
                         })}
                       </span>
                     </div>
@@ -1289,8 +1007,8 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
   );
 };
 
-// New Lead Form Component (same as before, keeping it compact)
-const NewLeadForm = ({ onClose, onSubmit, currentUser, users }) => {
+// New Lead Form Component
+const NewLeadForm = ({ onClose, onSubmit, currentUser, users, loading }) => {
   const [formData, setFormData] = useState({
     name: '',
     type: 'B2B',
@@ -1306,25 +1024,30 @@ const NewLeadForm = ({ onClose, onSubmit, currentUser, users }) => {
   const [sourceLevel2Options, setSourceLevel2Options] = useState([]);
 
   const handleSourceLevel1Change = (value) => {
-    setFormData({
-      ...formData,
-      source: { level1: value, level2: '' }
-    });
+    setFormData({ ...formData, source: { level1: value, level2: '' } });
     setSourceLevel2Options(SOURCES[value] || []);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     let assignedTo = formData.assignedTo;
     if (!assignedTo && currentUser.role !== 'admin') {
       assignedTo = currentUser.id;
-    } else if (!assignedTo && currentUser.role === 'admin') {
+    } else if (!assignedTo && users.length > 0) {
       const regionalSales = users.find(u => u.role === 'sales' && u.region === formData.region);
       assignedTo = regionalSales?.id || users.find(u => u.role === 'sales')?.id;
     }
-
-    onSubmit({ ...formData, assignedTo, value: parseInt(formData.value) || 0 });
+    onSubmit({
+      name: formData.name,
+      type: formData.type,
+      status: formData.status,
+      source: { level1: formData.source.level1, level2: formData.source.level2 },
+      region: formData.region,
+      value: parseInt(formData.value) || 0,
+      assignedTo,
+      contact: formData.contact,
+      company: formData.company,
+    });
   };
 
   return (
@@ -1341,56 +1064,38 @@ const NewLeadForm = ({ onClose, onSubmit, currentUser, users }) => {
           {/* Basic Info */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700">Основна информация</h3>
-            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Име на лийд *</label>
               <input
-                type="text"
-                required
-                value={formData.name}
+                type="text" required value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Име на фирма или лице"
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Тип *</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
+                <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                   <option value="B2B">B2B</option>
                   <option value="B2C">B2C</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Регион *</label>
-                <select
-                  required
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
+                <select required value={formData.region} onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                   <option value="">Избери</option>
-                  {REGIONS.map(region => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
+                  {REGIONS.map(region => <option key={region} value={region}>{region}</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Стойност (лв)</label>
-                <input
-                  type="number"
-                  value={formData.value}
+                <input type="number" value={formData.value}
                   onChange={(e) => setFormData({ ...formData, value: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="0"
-                />
+                  placeholder="0" />
               </div>
             </div>
           </div>
@@ -1398,36 +1103,23 @@ const NewLeadForm = ({ onClose, onSubmit, currentUser, users }) => {
           {/* Source */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700">Източник</h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Категория *</label>
-                <select
-                  required
-                  value={formData.source.level1}
-                  onChange={(e) => handleSourceLevel1Change(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
+                <select required value={formData.source.level1} onChange={(e) => handleSourceLevel1Change(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                   <option value="">Избери</option>
-                  {Object.keys(SOURCES).map(source => (
-                    <option key={source} value={source}>{source}</option>
-                  ))}
+                  {Object.keys(SOURCES).map(source => <option key={source} value={source}>{source}</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Подкатегория *</label>
-                <select
-                  required
-                  value={formData.source.level2}
+                <select required value={formData.source.level2}
                   onChange={(e) => setFormData({ ...formData, source: { ...formData.source, level2: e.target.value } })}
                   disabled={!formData.source.level1}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100"
-                >
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100">
                   <option value="">Избери</option>
-                  {sourceLevel2Options.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
+                  {sourceLevel2Options.map(option => <option key={option} value={option}>{option}</option>)}
                 </select>
               </div>
             </div>
@@ -1436,39 +1128,24 @@ const NewLeadForm = ({ onClose, onSubmit, currentUser, users }) => {
           {/* Contact Info */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700">Контактна информация</h3>
-            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Лице за контакт *</label>
-              <input
-                type="text"
-                required
-                value={formData.contact.person}
+              <input type="text" required value={formData.contact.person}
                 onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, person: e.target.value } })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.contact.email}
+                <input type="email" required value={formData.contact.email}
                   onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, email: e.target.value } })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Телефон *</label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.contact.phone}
+                <input type="tel" required value={formData.contact.phone}
                   onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, phone: e.target.value } })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
               </div>
             </div>
           </div>
@@ -1477,54 +1154,38 @@ const NewLeadForm = ({ onClose, onSubmit, currentUser, users }) => {
           {formData.type === 'B2B' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-700">Фирмени данни</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ЕИК</label>
-                  <input
-                    type="text"
-                    value={formData.company.eik}
+                  <input type="text" value={formData.company.eik}
                     onChange={(e) => setFormData({ ...formData, company: { ...formData.company, eik: e.target.value } })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">МОЛ</label>
-                  <input
-                    type="text"
-                    value={formData.company.mol}
+                  <input type="text" value={formData.company.mol}
                     onChange={(e) => setFormData({ ...formData, company: { ...formData.company, mol: e.target.value } })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Адрес</label>
-                <input
-                  type="text"
-                  value={formData.company.address}
+                <input type="text" value={formData.company.address}
                   onChange={(e) => setFormData({ ...formData, company: { ...formData.company, address: e.target.value } })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
               </div>
             </div>
           )}
 
           {/* Submit */}
           <div className="flex gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
               Отказ
             </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-            >
+            <button type="submit" disabled={loading}
+              className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading && <Loader className="w-4 h-4 animate-spin" />}
               Създай лийд
             </button>
           </div>

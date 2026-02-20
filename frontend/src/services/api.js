@@ -114,16 +114,73 @@ class APIService {
     return this.request('/users/performance');
   }
 
-  // Files
-  async addFile(leadId, name, type) {
-    return this.request('/files', {
-      method: 'POST',
-      body: JSON.stringify({ leadId, name, type }),
+  // Files - BASE64 DATABASE STORAGE
+  async uploadFile(leadId, file, fileType, fileDate) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async () => {
+        try {
+          const base64Data = reader.result.split(',')[1]; // Remove data:...;base64, prefix
+          
+          const data = await this.request('/files/upload', {
+            method: 'POST',
+            body: JSON.stringify({
+              leadId,
+              fileName: file.name,
+              fileType,
+              fileDate,
+              fileData: base64Data
+            }),
+          });
+          
+          resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Грешка при четене на файл'));
+      reader.readAsDataURL(file);
     });
   }
 
   async getLeadFiles(leadId) {
     return this.request(`/files/lead/${leadId}`);
+  }
+
+  async downloadFile(fileId) {
+    // Open download in new tab
+    const url = `${API_URL}/files/download/${fileId}`;
+    const headers = {
+      ...(this.token && { 'Authorization': `Bearer ${this.token}` }),
+    };
+
+    try {
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition 
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : 'download';
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      throw error;
+    }
   }
 
   async deleteFile(fileId) {
@@ -152,4 +209,3 @@ class APIService {
 
 const apiService = new APIService();
 export default apiService;
-// API push

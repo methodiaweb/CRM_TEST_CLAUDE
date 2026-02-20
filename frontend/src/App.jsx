@@ -710,6 +710,8 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState('offer');
   const [submitting, setSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+const [fileDate, setFileDate] = useState(new Date().toISOString().split('T')[0]);
 
   const handleAddComment = async () => {
     if (!comment.trim()) return;
@@ -719,14 +721,24 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
     setSubmitting(false);
   };
 
-  const handleAddFile = async () => {
-    if (!fileName.trim()) return;
-    setSubmitting(true);
-    await onAddFile(lead.id, fileName, fileType);
-    setFileName('');
+const handleAddFile = async () => {
+  if (!selectedFile) return;
+  setSubmitting(true);
+  try {
+    await api.uploadFile(lead.id, selectedFile, fileType, fileDate);
+    setSelectedFile(null);
+    setFileDate(new Date().toISOString().split('T')[0]);
     setShowFileUpload(false);
+    // Refresh lead
+    const res = await api.getLead(lead.id);
+    const updated = normalizeLead(res.lead);
+    setSelectedLead(updated);
+  } catch (err) {
+    alert('Грешка при качване на файл: ' + err.message);
+  } finally {
     setSubmitting(false);
-  };
+  }
+};
 
   const getTimelineIcon = (type) => {
     switch (type) {
@@ -739,6 +751,8 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
     }
   };
 
+
+  
   const getTimelineColor = (type) => {
     switch (type) {
       case 'created': return 'bg-blue-100 text-blue-600';
@@ -828,40 +842,73 @@ const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, cu
             </div>
 
             {showFileUpload && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <input
-                  type="text"
-                  placeholder="Име на файл..."
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 text-sm"
-                />
-                <select
-                  value={fileType}
-                  onChange={(e) => setFileType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded mb-2 text-sm"
-                >
-                  <option value="offer">Оферта</option>
-                  <option value="contract">Договор</option>
-                  <option value="other">Друго</option>
-                </select>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddFile}
-                    disabled={submitting}
-                    className="flex-1 px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    Качи
-                  </button>
-                  <button
-                    onClick={() => { setShowFileUpload(false); setFileName(''); }}
-                    className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
-                  >
-                    Отказ
-                  </button>
-                </div>
-              </div>
-            )}
+  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+    <div className="mb-2">
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Избери файл (PDF или DOCX)
+      </label>
+      <input
+        type="file"
+        accept=".pdf,.docx"
+        onChange={(e) => setSelectedFile(e.target.files[0])}
+        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+      />
+    </div>
+    
+    <div className="mb-2">
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Тип документ
+      </label>
+      <select
+        value={fileType}
+        onChange={(e) => setFileType(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+      >
+        <option value="offer">Оферта</option>
+        <option value="contract">Договор</option>
+        <option value="other">Друго</option>
+      </select>
+    </div>
+    
+    <div className="mb-3">
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Дата на документ
+      </label>
+      <input
+        type="date"
+        value={fileDate}
+        onChange={(e) => setFileDate(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+      />
+    </div>
+    
+    {selectedFile && (
+      <div className="mb-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
+        <strong>Избран:</strong> {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+      </div>
+    )}
+    
+    <div className="flex gap-2">
+      <button
+        onClick={handleAddFile}
+        disabled={submitting || !selectedFile}
+        className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? 'Качване...' : 'Качи файл'}
+      </button>
+      <button
+        onClick={() => { 
+          setShowFileUpload(false); 
+          setSelectedFile(null); 
+          setFileDate(new Date().toISOString().split('T')[0]); 
+        }}
+        className="px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+      >
+        Отказ
+      </button>
+    </div>
+  </div>
+)}
 
             <div className="space-y-2">
               {lead.files && lead.files.length > 0 ? (

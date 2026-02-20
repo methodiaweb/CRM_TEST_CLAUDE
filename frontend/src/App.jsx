@@ -689,7 +689,7 @@ const ChartCard = ({ title, data, type }) => {
 };
 
 // Lead Detail Component
-const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, onAddFile, currentUser }) => {
+const LeadDetail = ({ lead, onClose, onStatusChange, onAddComment, currentUser }) => {
   const [comment, setComment] = useState('');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);

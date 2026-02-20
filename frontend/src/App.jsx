@@ -729,10 +729,9 @@ const handleAddFile = async () => {
     setSelectedFile(null);
     setFileDate(new Date().toISOString().split('T')[0]);
     setShowFileUpload(false);
-    // Refresh lead
-    const res = await api.getLead(lead.id);
-    const updated = normalizeLead(res.lead);
-    setSelectedLead(updated);
+    // Close detail and refresh page to show new file
+    onClose();
+    window.location.reload();
   } catch (err) {
     alert('Грешка при качване на файл: ' + err.message);
   } finally {

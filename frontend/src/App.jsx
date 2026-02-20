@@ -202,19 +202,6 @@ const CRMApp = () => {
     }
   };
 
-  const addFile = async (leadId, fileName, fileType) => {
-    try {
-      await api.addFile(leadId, fileName, fileType);
-      // Refresh lead detail
-      const res = await api.getLead(leadId);
-      const updated = normalizeLead(res.lead);
-      setSelectedLead(updated);
-      setLeads(prev => prev.map(l => l.id === leadId ? updated : l));
-    } catch (err) {
-      setError('Грешка при качване на файл: ' + err.message);
-    }
-  };
-
   const openLeadDetail = async (lead) => {
     setLoading(true);
     try {
@@ -623,7 +610,6 @@ const CRMApp = () => {
               onClose={() => setSelectedLead(null)}
               onStatusChange={updateLeadStatus}
               onAddComment={addComment}
-              onAddFile={addFile}
               currentUser={currentUser}
             />
           )}

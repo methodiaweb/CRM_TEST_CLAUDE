@@ -145,6 +145,12 @@ class APIService {
     });
   }
 
+  // Backward-compat alias:
+// Older frontend code may call api.addFile(...). Keep it working.
+async addFile(leadId, file, fileType, fileDate) {
+  return this.uploadFile(leadId, file, fileType, fileDate);
+}
+  
   async getLeadFiles(leadId) {
     return this.request(`/files/lead/${leadId}`);
   }
